@@ -8,7 +8,45 @@ public class ServerMain {
 
     static List<ClientHandler> players = new ArrayList<>();
     static boolean partidaActiva = false;
-
+    static Random rm = new Random();
+    static String[] palabras = {
+    "casa", "perro", "gato", "coche", "ciudad", "persona", "tiempo", "día",
+    "noche", "agua", "fuego", "tierra", "aire", "amor", "vida", "trabajo",
+    "escuela", "libro", "mesa", "silla", "puerta", "ventana", "calle",
+    "camino", "mar", "montaña", "sol", "luna", "estrella", "árbol",
+    "flor", "fruta", "comida", "bebida", "familia", "amigo", "dinero",
+    "música", "película", "juego", "deporte", "cuerpo", "mente",
+    "idea", "problema", "solución", "historia", "futuro", "pasado",
+    "pueblo", "estado", "país", "mundo", "universo", "espacio", "nube",
+    "lluvia", "nieve", "viento", "bosque", "playa", "isla", "río",
+    "lago", "puente", "edificio", "piso", "techo", "pared", "jardín",
+    "parque", "plaza", "museo", "hospital", "cine", "teatro", "banco",
+    "tienda", "mercado", "ropa", "zapato", "pantalón", "camisa", "reloj",
+    "gafas", "bolsa", "maleta", "llave", "teléfono", "computadora", "radio",
+    "televisión", "cámara", "papel", "lápiz", "pluma", "cuaderno", "sobre",
+    "carta", "noticia", "idioma", "palabra", "frase", "pregunta", "respuesta",
+    "número", "letra", "forma", "color", "rojo", "azul", "verde", "amarillo",
+    "blanco", "negro", "gris", "café", "claro", "oscuro", "grande", "pequeño",
+    "largo", "corto", "ancho", "estrecho", "alto", "bajo", "nuevo", "viejo",
+    "joven", "mayor", "bueno", "malo", "mejor", "peor", "fácil", "difícil",
+    "posible", "imposible", "cierto", "falso", "hermoso", "feo", "rico", "pobre",
+    "lleno", "vacío", "caliente", "frío", "rápido", "lento", "fuerte", "débil",
+    "feliz", "triste", "alegre", "enojado", "cansado", "enfermo", "sano", "seguro",
+    "peligroso", "importante", "necesario", "especial", "común", "diferente", "igual", "libre",
+    "paz", "guerra", "ley", "justicia", "gobierno", "política", "derecho", "deber",
+    "arte", "ciencia", "salud", "energía", "fuerza", "poder", "miedo", "sueño",
+    "verdad", "mentira", "razón", "sentido", "alma", "corazón", "sangre", "mano",
+    "pie", "brazo", "pierna", "cabeza", "cara", "ojo", "oreja", "nariz",
+    "boca", "diente", "pelo", "espalda", "pecho", "hombro", "dedo", "uña",
+    "médico", "maestro", "estudiante", "policía", "cocinero", "conductor", "pintor", "escritor",
+    "actor", "cantante", "juez", "abogado", "ingeniero", "jefe", "empleado", "vecino",
+    "niño", "niña", "hombre", "mujer", "padre", "madre", "hijo", "hija",
+    "hermano", "hermana", "abuelo", "abuela", "tío", "tía", "primo", "sobrino",
+    "esposo", "pareja", "gente", "público", "grupo", "equipo", "clase", "club",
+    "sociedad", "cultura", "tradición", "viaje", "vuelo", "tren", "barco", "bicicleta",
+    "maletero", "rueda", "motor", "gasolina", "aceite", "hierro", "oro", "plata",
+    "piedra", "madera", "cristal", "plástico", "papel", "cuero", "algodón", "seda"
+};
     public static void main(String[] args) throws IOException {
 
         ServerSocket serverSocket = new ServerSocket(5000);
@@ -34,84 +72,19 @@ public class ServerMain {
 
     static void iniciarPartida() {
         partidaActiva = true;
-
+        String palabra = palabras[rm.nextInt(250)];
         List<ClientHandler> vivos = getVivos();
         Random r = new Random();
         ClientHandler impostor = vivos.get(r.nextInt(vivos.size()));
         impostor.impostor = true;
 
         for (ClientHandler c : vivos) {
-            c.send("ROL:" + (c.impostor ? "IMPOSTOR" : "INOCENTE"));
+            c.send("ROL:" + (c.impostor ? "IMPOSTOR" : "INOCENTE, palabra=" + palabra));
         }
 
         enviarATodos("COMIENZA");
-        cicloJuego();
     }
 
-    static void cicloJuego() {
-        List<String> candidatos = getNombresVivos();
-
-        while (partidaActiva) {
-            realizarVotacion(candidatos);
-            comprobarFinal();
-            candidatos = getNombresVivos();
-        }
-    }
-
-    static void realizarVotacion(List<String> candidatos) {
-
-        limpiarVotos();
-        enviarATodos("VOTAR:" + String.join(",", candidatos));
-
-        esperar(15000);
-
-        Map<String, Integer> conteo = new HashMap<>();
-        for (ClientHandler c : getVivos()) {
-            if (c.voto != null) {
-                conteo.put(c.voto, conteo.getOrDefault(c.voto, 0) + 1);
-            }
-        }
-
-        if (conteo.isEmpty()) return;
-
-        int max = Collections.max(conteo.values());
-        List<String> empatados = new ArrayList<>();
-
-        for (String nombre : conteo.keySet()) {
-            if (conteo.get(nombre) == max) {
-                empatados.add(nombre);
-            }
-        }
-
-        if (empatados.size() > 1) {
-            enviarATodos("EMPATE:" + String.join(",", empatados));
-            realizarVotacion(empatados);
-        } else {
-            expulsarJugador(empatados.get(0));
-        }
-    }
-
-    static void expulsarJugador(String nombre) {
-        for (ClientHandler c : players) {
-            if (c.nombre.equals(nombre) && c.vivo) {
-                c.vivo = false;
-                enviarATodos("EXPULSADO:" + nombre);
-
-                if (c.impostor) {
-                    enviarATodos("FIN:INOCENTES");
-                    partidaActiva = false;
-                }
-                return;
-            }
-        }
-    }
-
-    static void comprobarFinal() {
-        if (getVivos().size() == 2 && partidaActiva) {
-            enviarATodos("FIN:IMPOSTOR");
-            partidaActiva = false;
-        }
-    }
 
     static void enviarATodos(String msg) {
         for (ClientHandler c : players) {
@@ -119,24 +92,10 @@ public class ServerMain {
         }
     }
 
-    static void limpiarVotos() {
-        for (ClientHandler c : players) c.voto = null;
-    }
-
     static List<ClientHandler> getVivos() {
         List<ClientHandler> vivos = new ArrayList<>();
         for (ClientHandler c : players) if (c.vivo) vivos.add(c);
         return vivos;
-    }
-
-    static List<String> getNombresVivos() {
-        List<String> nombres = new ArrayList<>();
-        for (ClientHandler c : getVivos()) nombres.add(c.nombre);
-        return nombres;
-    }
-
-    static void esperar(int ms) {
-        try { Thread.sleep(ms); } catch (InterruptedException ignored) {}
     }
 }
 

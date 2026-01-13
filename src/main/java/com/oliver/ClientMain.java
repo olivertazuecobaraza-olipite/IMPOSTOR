@@ -26,25 +26,6 @@ public class ClientMain {
             if (msg.startsWith("ROL:")) {
                 System.out.println("Tu rol es: " + msg.split(":")[1]);
             }
-
-            if (msg.startsWith("VOTAR:")) {
-                System.out.println("Candidatos: " + msg.split(":")[1]);
-                System.out.print("Vota: ");
-                out.println("VOTO:" + sc.nextLine());
-            }
-
-            if (msg.startsWith("EMPATE:")) {
-                System.out.println("Empate entre: " + msg.split(":")[1]);
-            }
-
-            if (msg.startsWith("EXPULSADO:")) {
-                System.out.println("Expulsado: " + msg.split(":")[1]);
-            }
-
-            if (msg.startsWith("FIN:")) {
-                System.out.println("Resultado: " + msg.split(":")[1]);
-                break;
-            }
         }
     }
 }
