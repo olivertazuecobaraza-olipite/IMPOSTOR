@@ -56,7 +56,7 @@ public class ServerMain {
             Scanner sc = new Scanner(System.in);
             while (true) {
                 if (sc.nextLine().equalsIgnoreCase("START")) {
-                    if (!partidaActiva) iniciarPartida();
+                    iniciarPartida();
                 }
             }
         }).start();
@@ -71,19 +71,33 @@ public class ServerMain {
     }
 
     static void iniciarPartida() {
-        partidaActiva = true;
-        String palabra = palabras[rm.nextInt(250)];
-        List<ClientHandler> vivos = getVivos();
-        Random r = new Random();
-        ClientHandler impostor = vivos.get(r.nextInt(vivos.size()));
-        impostor.impostor = true;
-
-        for (ClientHandler c : vivos) {
-            c.send("ROL:" + (c.impostor ? "IMPOSTOR" : "INOCENTE, palabra=" + palabra));
-        }
-
-        enviarATodos("COMIENZA");
+    List<ClientHandler> vivos = getVivos();
+    
+    // VALIDACIÓN: Evita errores si no hay jugadores
+    if (vivos.isEmpty()) {
+        System.out.println("No hay jugadores para iniciar.");
+        return;
     }
+
+    partidaActiva = true;
+
+    // 1. REINICIAR ESTADOS: Limpiar roles anteriores
+    for (ClientHandler c : players) {
+        c.impostor = false;
+    }
+
+    // 2. SELECCIONAR NUEVO IMPOSTOR
+    String palabra = palabras[rm.nextInt(palabras.length)]; // Usar .length es más seguro que 250
+    ClientHandler impostor = vivos.get(rm.nextInt(vivos.size()));
+    impostor.impostor = true;
+
+    // 3. ENVIAR ROLES
+    for (ClientHandler c : vivos) {
+        c.send("ROL:" + (c.impostor ? "IMPOSTOR" : "INOCENTE, palabra=" + palabra));
+    }
+
+    enviarATodos("COMIENZA");
+}
 
 
     static void enviarATodos(String msg) {
